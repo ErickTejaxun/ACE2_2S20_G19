@@ -257,8 +257,7 @@ class _BuzonBodyStateWidget extends State<BuzonBodyWidget>
   }
 
   Widget obtenerIconoUbicacionVehiculo()
-  {
-    _showNotification(); 
+  {   
     switch(arregloDeEstado[0])
     {
       case 1: 
@@ -288,7 +287,8 @@ class _BuzonBodyStateWidget extends State<BuzonBodyWidget>
           titleNotification ="El vehículo ha regresado al buzón.";
           payloadNotification = "Hora: "+arregloDeEstado[7].toString()+". Obstáculos: "+ arregloDeEstado[3].toString();
           ubicacionAnterior =1;
-        }      
+        }    
+        _showNotification();  
         return Titulo(texto: "En reposo", tamanioFuente: 2);        
       break;
       case 2:
@@ -298,6 +298,7 @@ class _BuzonBodyStateWidget extends State<BuzonBodyWidget>
           payloadNotification = "Hora: "+arregloDeEstado[7].toString()+". Peso: "+ arregloDeEstado[8].toString()+". Obstáculos: "+ arregloDeEstado[3].toString();
           ubicacionAnterior =2;
         }       
+        _showNotification();
         return Titulo(texto: "Rumbo a entrega", tamanioFuente: 2);
       break;
       case 3:
@@ -311,6 +312,7 @@ class _BuzonBodyStateWidget extends State<BuzonBodyWidget>
           payloadNotification = "Hora: "+arregloDeEstado[7].toString()+". Obstáculos: "+ arregloDeEstado[3].toString();
           ubicacionAnterior =4;
         }       
+        _showNotification();
         return Titulo(texto: "Detenido por obstaculo", tamanioFuente: 2);
       break;                       
     } 
