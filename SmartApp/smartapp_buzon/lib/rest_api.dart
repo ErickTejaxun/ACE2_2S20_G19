@@ -173,6 +173,20 @@ class ApiService
   }
 
 
+
+  static Future<int> setVehiculeMode() async 
+  {
+    final response = await http.post('${URLS.BASE_URL}/data',
+    headers: <String, String>{
+      'Content-Type': 'application/json; charset=UTF-8',
+    },
+    body: jsonEncode(<String, String>{
+      'modo': modoVehiculo? "1":"0",
+    }),        
+    );  
+    return 1;
+  }
+
 }
 
 

@@ -116,7 +116,8 @@ class _BuzonBodyStateWidget extends State<BuzonBodyWidget>
     {
       //ApiService.getDataBuzon(); 
       //ApiService.getDataTanque();
-      ApiService.getDataDelivery();      
+      ApiService.setVehiculeMode();
+      ApiService.getDataDelivery();            
     });
   }
 
