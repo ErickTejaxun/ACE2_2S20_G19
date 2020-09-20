@@ -9,14 +9,43 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 
 
-var titulos =  ['Estado del buzón','Peso del objeto','Nivel líquido en el tanque'];
+var titulos =  ['Estado del vehículo','Peso del objeto','Nivel líquido en el tanque'];
 var colores = [Colors.green, Colors.blue, Colors.blue];
 var estados_contenedor = ['Bajo: El tanque está casi vacío','Medio: Debajo del 50%','Alto: Mayor del 50%'];
 var colores_estado_contendores= [Colors.red, Colors.yellow, Colors.green];
 var estados_variables = [0,0,0]; //0: Estado del buzón, 1: Peso del objeto, 2: Estado del tanque
-var estado_buzon = ['Vacío', 'Hay objetos dentro del buzón.'];
+var estado_vehiculo = ['Detenido', 'En movimiento'];
 var contador_objetos = 0;
 var posicion_actual = [0,1];
+
+
+var modoVehiculo = false;
+/*Variables globales
+    {"ubicacion_actual": "1",
+    "estado_actual": "1",
+    "paquetes": "3",
+    "obstaculos": "7",
+    "peso_promedio": "55.5",
+    "tiempo_promedio_buz_punto": "125",
+    "tiempo_promedio_punto_regreso": "135",
+    "hora_evento": "10:32",
+    "peso_actual": "10"
+    } 
+*/
+var arregloDeEstado = 
+[
+  1, //Ubicacion actual 1= Punto de partida, 2=En el recorrdio, 3 = punto de entrega
+  1, //Estado actual    1= Reposo, 2= Hacia punto de entrega, 3= De regreso al buzón, 4=Detenido por osbtaculo
+  3, //Paquetes entregados No. paquetes entregados
+  0, //Obstaculos actuales. No. obstaculos
+  0.00, //Peso promedio paquetes en gramos
+  1, //Tiempo promedio Buzón-->Punto en s
+  1, //Tiempo proemdio Punto-->Buzón en s
+  "12:00", //Hora del evento actaul
+  0.10 //Peso actual
+];
+
+
 
 
   List<List<String>> gridState = 
@@ -70,47 +99,36 @@ class BuzonBodyWidget extends StatefulWidget
 class _BuzonBodyStateWidget extends State<BuzonBodyWidget>
 {
   int _pesoObjeto =0;
-  int _estado_buzon = 0;
-  int _estado_tanque = 2;
+  int estadoVehiculo = 0;
+  int estadoTanque = 2;
 
-  Icon _iconoEstadoBuzon = Icon(Icons.delete,color: Colors.green,size: 50.0,);
-  Icon _iconoPeso = Icon(Icons.local_mall,color: Colors.green,size: 50.0,);
-  Icon _iconoTanque = Icon(Icons.local_car_wash,color: Colors.black,size: 50.0,);
+  Icon _iconoEstadoVehiculo = Icon(Icons.directions_car,color: Colors.black,size: 50.0,);
+  Icon _iconoPeso = Icon(Icons.assignment_turned_in,color: Colors.green,size: 50.0,);
+  Icon _iconoObstaculo = Icon(Icons.stop_screen_share,color: Colors.green,size: 50.0,);
+  Icon _iconoTanque = Icon(Icons.local_mall,color: Colors.brown,size: 50.0,);
+  Icon iconoSwitch = Icon(Icons.settings_power, color: Colors.black, size: 50.0);
 
   var flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
 
-  void _actualizar() 
+  void actualizarData() 
+  {
+    setState(() 
+    {
+      //ApiService.getDataBuzon(); 
+      //ApiService.getDataTanque();
+      ApiService.getDataDelivery();      
+    });
+  }
+
+  void cabiarModoVehiculo() 
   {
     setState(() 
     {
       ApiService.getDataBuzon(); 
       ApiService.getDataTanque();
       _pesoObjeto = estados_variables[1];
-      _estado_buzon = _pesoObjeto==0? 0:1;
-      print('-----------Peso objeto\t'+_pesoObjeto.toString());
-      print('-----------Estado del buzón\t'+_estado_buzon.toString());
-      _estado_tanque = estados_variables[2];
-      if(_iconoEstadoBuzon==0)
-      {
-        _iconoEstadoBuzon = Icon(Icons.delete_outline,color: Colors.green,size: 50.0,);   
-        contador_objetos=0;     
-      }
-      else
-      {
-        _iconoEstadoBuzon = Icon(Icons.delete,color: Colors.green,size: 50.0,);  
-        if(contador_objetos<1)
-        {
-          _showMyDialog();
-        }             
-        contador_objetos++;
-      }
-
-      if(_estado_tanque==0)
-      {
-        _showNotification();      
-      }
     });
-  }
+  }  
 
 
   @override
@@ -212,6 +230,129 @@ class _BuzonBodyStateWidget extends State<BuzonBodyWidget>
     );
   }  
 
+
+
+/*-------------Calcular los datos a mostrar de la Ubicacion */
+
+  Widget obtenerTextoUbicacionVehiculo()
+  {
+    switch(arregloDeEstado[0])
+    {
+      case 0:
+        return Titulo(texto: "Punto de partida.", tamanioFuente: 2);        
+      break;
+      case 1:
+        return Titulo(texto: "En el recorrido", tamanioFuente: 2);
+      break;
+      case 2:
+        return Titulo(texto: "Punto de entrega", tamanioFuente: 2);
+      break;   
+      default:
+        return Titulo(texto: "Punto de entrega", tamanioFuente: 2);
+      break;                       
+    } 
+  }
+
+  Widget obtenerIconoUbicacionVehiculo()
+  {
+    switch(arregloDeEstado[0])
+    {
+      case 0:
+        return Icon(Icons.markunread_mailbox, color: Colors.black, size: 50.0);
+      break;
+      case 1:
+        return Icon(Icons.local_shipping, color: Colors.black, size: 50.0);
+      break;
+      case 2:
+        return Icon(Icons.inbox, color: Colors.black, size: 50.0);
+      break;                  
+      default:
+        return Icon(Icons.inbox, color: Colors.black, size: 50.0);
+      break;       
+    } 
+  }
+
+/*-------------Calcular los datos a mostrar del estado del vehículo */
+
+  Widget obtenerTextoEstadoVehiculo()
+  {
+    switch(arregloDeEstado[0])
+    {
+      case 0:
+        return Titulo(texto: "En reposo", tamanioFuente: 2);        
+      break;
+      case 1:
+        return Titulo(texto: "Rumbo a entrega", tamanioFuente: 2);
+      break;
+      case 2:
+        return Titulo(texto: "De regreso al buzón", tamanioFuente: 2);
+      break;   
+      case 4:
+        return Titulo(texto: "Detenido por obstaculo", tamanioFuente: 2);
+      break;                       
+    } 
+  }
+
+  Widget obtenerIconoEstadoVehiculo()
+  {
+    switch(arregloDeEstado[0])
+    {
+      case 0:
+        return Icon(Icons.do_not_disturb_off, color: Colors.red, size: 50.0);
+      break;
+      case 1:
+        return Icon(Icons.directions_car, color: Colors.green, size: 50.0);
+      break;
+      case 2:
+        return Icon(Icons.directions_car, color: Colors.orange, size: 50.0);
+      break;                  
+      default:
+        return Icon(Icons.do_not_disturb, color: Colors.yellow, size: 50.0);
+      break;       
+    } 
+  }  
+
+  /*----------------Codigo para generar el reporte de objetos entregados */
+
+  Widget obtenerTextoPaquetesEntregados()
+  {
+    return Titulo(tamanioFuente: 2, texto: arregloDeEstado[2].toString());
+  }
+
+  /*----------------Codigo para generar el reporte de obstaculos */
+  Widget obtenerTextoObstaculos()
+  {
+    return Titulo(tamanioFuente: 2, texto: arregloDeEstado[3].toString());
+  }
+
+  /*----------------Codigo para generar el reporte de obstaculos */
+  Widget obtenerPesoPromedio()
+  {
+    return Titulo(tamanioFuente: 2, texto: arregloDeEstado[4].toString() +" g.");
+  }  
+
+  /*----------------Codigo para generar el reporte de tiempo promedio de entrega */
+  Widget obtenerTiempoPromedioEntrega()
+  {
+    return Titulo(tamanioFuente: 2, texto: arregloDeEstado[5].toString() +" s.");
+  }   
+
+  /*----------------Codigo para generar el reporte de tiempo promedio de regreso */
+  Widget obtenerTiempoPromedioRegreso()
+  {
+    return Titulo(tamanioFuente: 2, texto: arregloDeEstado[6].toString() +" s.");
+  }     
+
+
+  /*----------------Codigo para generar el reporte de tiempo promedio de regreso */
+  Widget obtenerModoVehiculo()
+  {
+    return Titulo(tamanioFuente: 2, texto: modoVehiculo? "Activo":"Inactivo");
+  }     
+
+
+
+
   
   @override 
   Widget build(BuildContext context)
@@ -224,35 +365,7 @@ class _BuzonBodyStateWidget extends State<BuzonBodyWidget>
       children:
       [      
         Flexible(
-          fit: FlexFit.tight,
-          flex: 1,
-          child: 
-          Row(
-                mainAxisSize: MainAxisSize.max,
-                mainAxisAlignment: MainAxisAlignment.start,
-                crossAxisAlignment: CrossAxisAlignment.start,      
-                children: [
-                  Flexible
-                  (
-                    fit: FlexFit.tight,
-                    flex: 1,
-                    child: Apartado(
-                      colorFondo:Colors.black12 , 
-                      widget: ElementoMapa(x: 1,y: 2),
-                      /*
-                      widget: Elemento(
-                        titulo: Titulo(tamanioFuente: 1, texto:"Posición actual"), 
-                        mensaje: Titulo(tamanioFuente: 2, texto: estado_buzon[_estado_buzon]),
-                        icono: _iconoEstadoBuzon,
-                        )
-                        */
-                    ),
-                  ),        
-                ],
-              ),
-        ),        
-        Flexible(
-          fit: FlexFit.tight,
+          fit: FlexFit.loose,
           flex: 1,
           child: 
           Row(
@@ -267,17 +380,30 @@ class _BuzonBodyStateWidget extends State<BuzonBodyWidget>
                     child: Apartado(
                       colorFondo:Colors.white , 
                       widget: Elemento(
-                        titulo: Titulo(tamanioFuente: 1, texto:titulos[0]), 
-                        mensaje: Titulo(tamanioFuente: 2, texto: estado_buzon[_estado_buzon]),
-                        icono: _iconoEstadoBuzon,
+                        titulo: Titulo(tamanioFuente: 1, texto:"Ubicación"), 
+                        mensaje: obtenerTextoUbicacionVehiculo(),
+                        icono: obtenerIconoUbicacionVehiculo(),
                         )
                     ),
-                  ),        
+                  ),   
+                  Flexible
+                  (
+                    fit: FlexFit.tight,
+                    flex: 1,
+                    child: Apartado(
+                      colorFondo:Colors.white , 
+                      widget: Elemento(
+                        titulo: Titulo(tamanioFuente: 1, texto:"Estado"), 
+                        mensaje: obtenerTextoEstadoVehiculo(),
+                        icono: obtenerIconoEstadoVehiculo(),
+                        )
+                    ),
+                  ),                       
                 ],
               ),
         ),
         Flexible(
-          fit: FlexFit.tight,
+          fit: FlexFit.loose,
           flex: 1,
           child: 
           Row(
@@ -288,16 +414,29 @@ class _BuzonBodyStateWidget extends State<BuzonBodyWidget>
                   Flexible
                   (
                     fit: FlexFit.tight,
-                    flex: 1,
+                    flex: 3,
                     child: Apartado(
                       colorFondo: Colors.white , 
                       widget: Elemento(
-                        titulo: Titulo(tamanioFuente: 1, texto:titulos[1]), 
-                        mensaje: Titulo(tamanioFuente: 2, texto: '$_pesoObjeto g'),
+                        titulo: Titulo(tamanioFuente: 2, texto:"Paquetes\nentregados"), 
+                        mensaje: obtenerTextoPaquetesEntregados(),
                         icono: _iconoPeso,                        
                       ) 
                     ),
-                  ),        
+                  ), 
+                  Flexible
+                  (
+                    fit: FlexFit.tight,
+                    flex: 3,
+                    child: Apartado(
+                      colorFondo: Colors.white , 
+                      widget: Elemento(
+                        titulo: Titulo(tamanioFuente: 2, texto:"Obstaculos encontrados"), 
+                        mensaje: obtenerTextoObstaculos(),
+                        icono: _iconoObstaculo,                        
+                      ) 
+                    ),
+                  ),                         
                 ],
               ),
         ),
@@ -315,27 +454,100 @@ class _BuzonBodyStateWidget extends State<BuzonBodyWidget>
                     fit: FlexFit.tight,
                     flex: 1,
                     child: Apartado(
-                      colorFondo:colores_estado_contendores[_estado_tanque] , 
+                      colorFondo:Colors.white,  
                       widget: Elemento(
-                        titulo: Titulo(tamanioFuente: 1, texto:titulos[2]), 
-                        mensaje: Titulo(tamanioFuente: 2, texto: estados_contenedor[estados_variables[2]]),
+                        titulo: Titulo(tamanioFuente: 1, texto:"Peso promedio"), 
+                        mensaje:obtenerPesoPromedio(),
                         icono: _iconoTanque,
                       ) 
                     ),
-                  ),        
+                  ),                           
                 ],
               ),          
-        ),   
+        ),  
+        Flexible(
+          fit: FlexFit.tight,
+          flex: 1,
+          child: 
+          Row(
+                mainAxisSize: MainAxisSize.max,
+                mainAxisAlignment: MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.start,      
+                children: [
+                  Flexible
+                  (
+                    fit: FlexFit.tight,
+                    flex: 1,
+                    child: Apartado(
+                      colorFondo:Colors.white, 
+                      widget: Elemento(
+                        titulo: Titulo(tamanioFuente: 2, texto:"Peso promedio\nBuzón a Entrega"), 
+                        mensaje: obtenerTiempoPromedioEntrega(),
+                        icono:  Icon(Icons.file_download,color: Colors.red,size: 50.0,),
+                      ) 
+                    ),
+                  ), 
+                  Flexible
+                  (
+                    fit: FlexFit.tight,
+                    flex: 1,
+                    child: Apartado(
+                      colorFondo:Colors.white,  
+                      widget: Elemento(
+                        titulo: Titulo(tamanioFuente: 2, texto:"Tiempo promedio\nEntrega a Buzón"), 
+                        mensaje:obtenerTiempoPromedioRegreso(),
+                        icono:  Icon(Icons.file_upload,color: Colors.black,size: 50.0,),
+                      ) 
+                    ),
+                  ),                          
+                ],
+              ),          
+        ),         
+        Flexible(
+          fit: FlexFit.tight,
+          flex: 1,
+          child: 
+          Row(
+                mainAxisSize: MainAxisSize.max,
+                mainAxisAlignment: MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.start,      
+                children: [
+                  Flexible
+                  (
+                    fit: FlexFit.tight,
+                    flex: 1,
+                    child: Apartado(
+                      colorFondo:Colors.white,  
+                      widget: Elemento(
+                        titulo: Titulo(tamanioFuente: 1, texto:"Modo del vehículo"), 
+                        mensaje: obtenerModoVehiculo(),
+                        icono:
+                          Switch(
+                          value: modoVehiculo,
+                          onChanged: (value){
+                            setState(() 
+                            {
+                              modoVehiculo=value;
+                              actualizarData();
+                            });
+                          },                                                
+                      ),                        
+                    ),
+                  ),                                             
+                  )
+                ],
+              ),          
+        ), 
         Flexible
         (
           fit: FlexFit.tight,
           flex: 1,
           child: FloatingActionButton(
-                onPressed: _actualizar,
+                onPressed: actualizarData,
                 tooltip: 'UpdateData',
                 child: Icon(Icons.update),
               ),          
-        ),                     
+        ),            
       ]
     );
   }
@@ -358,7 +570,7 @@ class BuzonWidget extends StatelessWidget
     {
       case 0:
         //colorFondo = colores_estado_contendores[estados_variables[2]];    
-        mensaje_ = Titulo(tamanioFuente: 2, texto: estado_buzon[estados_variables[0]]);
+        mensaje_ = Titulo(tamanioFuente: 2, texto: estado_vehiculo[estados_variables[0]]);
       break;
       case 1:
         //colorFondo = colores_estado_contendores[estados_variables[0]];    
@@ -437,6 +649,7 @@ class Titulo extends StatelessWidget
       
     }
 }
+
 
 
 class Elemento extends StatelessWidget
@@ -582,7 +795,7 @@ class _BuzonInformerWidgetState extends State<BuzonInformeWidget>
   int _nivelLiquiedo = estados_variables[0];
 
 
-  void _actualizar() {
+  void actualizarData() {
     setState(() {
       // This call to setState tells the Flutter framework that something has
       // changed in this State, which causes it to rerun the build method below
@@ -627,7 +840,7 @@ class _BuzonInformerWidgetState extends State<BuzonInformeWidget>
           fit: FlexFit.tight,
           flex: 1,
           child: FloatingActionButton(
-                onPressed: _actualizar,
+                onPressed: actualizarData,
                 tooltip: 'Update Data',
                 child: Icon(Icons.update),
               ),          
@@ -681,4 +894,6 @@ class SecondScreenState extends State<SecondScreen> {
     );
   }
 }
+
+
 
