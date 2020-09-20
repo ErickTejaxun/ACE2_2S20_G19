@@ -17,7 +17,11 @@ var estados_variables = [0,0,0]; //0: Estado del buzón, 1: Peso del objeto, 2: 
 var estado_vehiculo = ['Detenido', 'En movimiento'];
 var contador_objetos = 0;
 var posicion_actual = [0,1];
+var ubicacionAnterior =0;
 
+var titleNotification = 'El vehículo ha salido hacia el buzón';
+var payloadNotification = "Hora: "+arregloDeEstado[7].toString() +". Peso: "+arregloDeEstado[8].toString();
+int trendingNewsId = 5;
 
 var modoVehiculo = false;
 /*Variables globales
@@ -157,18 +161,17 @@ class _BuzonBodyStateWidget extends State<BuzonBodyWidget>
     );
   }  
 
-
   Future<void> _showMyDialog() async {
     return showDialog<void>(
       context: context,
       barrierDismissible: false, // user must tap button!
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text('Nuevo paquete'),
+          title: Text(titleNotification),
           content: SingleChildScrollView(
             child: ListBody(
               children: <Widget>[
-                Text('Hay un nuevo paquete en el buzón'),                
+                Text(payloadNotification),                
               ],
             ),
           ),
@@ -188,19 +191,18 @@ class _BuzonBodyStateWidget extends State<BuzonBodyWidget>
 
 
 
-  Future _showNotification() async {
+  Future _showNotification() async 
+  {
     var androidPlatformChannelSpecifics = AndroidNotificationDetails(
         'SmartMailBox', 'WebAPIRest', 'Server as a broker',
         importance: Importance.Max, priority: Priority.High);
     var iOSPlatformChannelSpecifics = IOSNotificationDetails();
     var platformChannelSpecifics = NotificationDetails(
         androidPlatformChannelSpecifics, iOSPlatformChannelSpecifics);
-
-
-    String trendingNewsId = '5';
+            
     await flutterLocalNotificationsPlugin.show(
-        0, 'SmartMailBox', 'El tanque del desinfectante está en un nivel muy bajo.', platformChannelSpecifics,
-        payload: trendingNewsId);
+        0, titleNotification, payloadNotification, platformChannelSpecifics,
+        payload: (trendingNewsId++).toString());
   } 
 
   
@@ -239,13 +241,13 @@ class _BuzonBodyStateWidget extends State<BuzonBodyWidget>
   {
     switch(arregloDeEstado[0])
     {
-      case 0:
+      case 1:
         return Titulo(texto: "Punto de partida.", tamanioFuente: 2);        
       break;
-      case 1:
+      case 2:
         return Titulo(texto: "En el recorrido", tamanioFuente: 2);
       break;
-      case 2:
+      case 3:
         return Titulo(texto: "Punto de entrega", tamanioFuente: 2);
       break;   
       default:
@@ -256,15 +258,16 @@ class _BuzonBodyStateWidget extends State<BuzonBodyWidget>
 
   Widget obtenerIconoUbicacionVehiculo()
   {
+    _showNotification(); 
     switch(arregloDeEstado[0])
     {
-      case 0:
+      case 1: 
         return Icon(Icons.markunread_mailbox, color: Colors.black, size: 50.0);
       break;
-      case 1:
+      case 2:     
         return Icon(Icons.local_shipping, color: Colors.black, size: 50.0);
       break;
-      case 2:
+      case 3:           
         return Icon(Icons.inbox, color: Colors.black, size: 50.0);
       break;                  
       default:
@@ -279,16 +282,35 @@ class _BuzonBodyStateWidget extends State<BuzonBodyWidget>
   {
     switch(arregloDeEstado[0])
     {
-      case 0:
+      case 1:
+        if(ubicacionAnterior>=4)
+        {
+          titleNotification ="El vehículo ha regresado al buzón.";
+          payloadNotification = "Hora: "+arregloDeEstado[7].toString()+". Obstáculos: "+ arregloDeEstado[3].toString();
+          ubicacionAnterior =1;
+        }      
         return Titulo(texto: "En reposo", tamanioFuente: 2);        
       break;
-      case 1:
+      case 2:
+        if(ubicacionAnterior==1)
+        {
+          titleNotification ="El vehículo ha salido del buzón.";
+          payloadNotification = "Hora: "+arregloDeEstado[7].toString()+". Peso: "+ arregloDeEstado[8].toString()+". Obstáculos: "+ arregloDeEstado[3].toString();
+          ubicacionAnterior =2;
+        }       
         return Titulo(texto: "Rumbo a entrega", tamanioFuente: 2);
       break;
-      case 2:
+      case 3:
+        ubicacionAnterior =3;
         return Titulo(texto: "De regreso al buzón", tamanioFuente: 2);
       break;   
       case 4:
+        if(ubicacionAnterior==3)
+        {
+          titleNotification ="El vehículo ha llegado al punto de entrega.";
+          payloadNotification = "Hora: "+arregloDeEstado[7].toString()+". Obstáculos: "+ arregloDeEstado[3].toString();
+          ubicacionAnterior =4;
+        }       
         return Titulo(texto: "Detenido por obstaculo", tamanioFuente: 2);
       break;                       
     } 
@@ -298,13 +320,13 @@ class _BuzonBodyStateWidget extends State<BuzonBodyWidget>
   {
     switch(arregloDeEstado[0])
     {
-      case 0:
+      case 1:
         return Icon(Icons.do_not_disturb_off, color: Colors.red, size: 50.0);
       break;
-      case 1:
+      case 2:
         return Icon(Icons.directions_car, color: Colors.green, size: 50.0);
       break;
-      case 2:
+      case 3:
         return Icon(Icons.directions_car, color: Colors.orange, size: 50.0);
       break;                  
       default:
@@ -869,9 +891,9 @@ class SecondScreenState extends State<SecondScreen> {
   }
 
   var newsList = {
-    1:"Anand Mahindra gets note from 11 year girl to curb noise pollution",
-    2:"26 yr old engineer brings 10 pons back to life",
-    5:"Donald trump says windmill cause cancer."
+    1:"Arqui 2 , proyecto 1",
+    2:"-----------",
+    5:"Grupo 19"
   };
 
   @override
