@@ -1,4 +1,4 @@
-#include <ESP8266WiFi.h>
+ #include <ESP8266WiFi.h>
 #include <ESP8266HTTPClient.h>
 
 void setup() {
@@ -38,7 +38,7 @@ void loop() {
     }else if(tipo == "S"){
       s(contenido);
     }else if(tipo == "P"){
-      p(contenido); c
+      p(contenido);
     }else if(tipo == "R"){
       r(contenido);
     }

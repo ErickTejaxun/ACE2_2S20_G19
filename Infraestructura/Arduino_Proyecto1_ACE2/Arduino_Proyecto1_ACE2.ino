@@ -20,14 +20,13 @@ const int IN1 = 9;
 const int IN2 = 8;
 const int IN3 = 7;
 const int IN4 = 6;
-const int ENB = 11; //el pin 5 es PWN de 980Hz mientras que el 10 y 11 son de 490Hz por lo tanto no se usa
+const int ENB = 11; //el pin 5 es PWN de 980Hz mientras que el 10 y 11 son de 490Hz por lo tanto el 5 no se usa porque ambos deben tener la misma frecuencia
 
 //sensor de distancia
 const int Trigger = 5;
 const int Echo = 4;
 const int Trigger_trasero = 3;
 const int Echo_trasero = 2;
-
 
 //estados que se manejaran
 boolean punto_partida_sin_peso;
@@ -41,22 +40,25 @@ int estadoDer;
 int estadoIzq_trasero;
 int estadoDer_trasero;
 
-int vel_IA = 175; //El motor izquierdo necesita un poco mas de voltaje para que ambos giren a la misma velocidad
-int vel_DA = 169;
+int vel_IA = 105; //El motor izquierdo necesita un poco mas de voltaje para que ambos giren a la misma velocidad
+int vel_DA = 102;
 
-int vel_IR = 175; //El motor izquierdo necesita un poco mas de voltaje para que ambos giren a la misma velocidad
-int vel_DR = 169;
+int vel_IR = 120; //El motor izquierdo necesita un poco mas de voltaje para que ambos giren a la misma velocidad
+int vel_DR = 116;
 
 int obs_A;
 int obs_R;
 
-unsigned long previousMillis = 0;
+boolean permiso_conteo_obstaculos;
+
+/*** para llamar los metodos de {ubicacion, estado} cada 1.5 segundos sin utilizar 'delay' ***/
+unsigned long previousMillis = 0; 
 const long interval = 1500;
 
 void setup() {
   // put your setup code here, to run once:
   
-  Serial.begin(9600);
+  //Serial.begin(9600);//
   mySerial.begin(115200);
   
   pinMode(ENA, OUTPUT);
@@ -79,6 +81,8 @@ void setup() {
 
   obs_A = 0;
   obs_R = 0;
+
+  permiso_conteo_obstaculos = false;
   
   calibracion_balanza(); //se calibra y destara el sensor de peso al iniciar
 }
@@ -98,22 +102,26 @@ void loop() {
   }else if (punto_llegada_sin_peso == true){
     viaje_hacia_atras();
   }
-  //delay(20);
 }
 
 
 /********************************* HACIA ADELANTE ************************************/
 void viaje_hacia_adelante(){    
-  Serial.println("entra viaje adelante");
+  //Serial.println("entra viaje adelante");//*-
   int obs = Detectar_obstaculo();  
   
-  if (obs == 0){    
+  if (obs == 0){
     
     unsigned long currentMillis = millis();
 
     if (currentMillis - previousMillis >= interval) {
-      previousMillis = currentMillis;  // save the last time you blinked the LED
+      previousMillis = currentMillis;
       Enviar_ubicacionEstado(2,2);
+    }
+
+    if (permiso_conteo_obstaculos == true){
+      obs_A = obs_A + 1;
+      permiso_conteo_obstaculos = false;
     }
     
     estadoIzq = analogRead(sensorIzq);
@@ -147,31 +155,32 @@ void viaje_hacia_adelante(){
       punto_llegada_sin_peso = false;
 
       //paquete entregado: obstaculos?
-      //Enviar_infoPaqueteEntregado(GetPeso(), obs_A);
+      Enviar_infoPaqueteEntregado(GetPeso(), obs_A);
+      obs_A = 0;
       
     }else if(estadoIzq > 500 && estadoDer < 500){
       //se detecta color negro o no se detecta nada en sensor izquierdo
       //*** CRUZAR IZQUIERDA ***/
-      digitalWrite(IN1, LOW);//
-      digitalWrite(IN2, LOW);//
+      digitalWrite(IN1, LOW);
+      digitalWrite(IN2, HIGH);//
       digitalWrite(IN3, HIGH);
       digitalWrite(IN4, LOW);
   
       //analogWrite(ENA, 60);//
-      //analogWrite(ENA, 1);      
+      //analogWrite(ENA, 1);//
       analogWrite(ENB, vel_DA);
       
     }else if(estadoIzq < 500 && estadoDer > 500){
       //se detecta color negro o no se detecta nada en sensor derecho
       //*** CRUZAR DERECHA ***/
       digitalWrite(IN1, HIGH);
-      digitalWrite(IN2, LOW);
-      digitalWrite(IN3, LOW);//
-      digitalWrite(IN4, LOW);//
+      digitalWrite(IN2, LOW);//
+      digitalWrite(IN3, LOW);
+      digitalWrite(IN4, HIGH);//
   
       analogWrite(ENA, vel_IA);
       //analogWrite(ENB, 58);//
-      //analogWrite(ENB, 1);      
+      //analogWrite(ENB, 1);//
     }    
     
   }else{
@@ -182,17 +191,17 @@ void viaje_hacia_adelante(){
     
     analogWrite(ENA, 0);
     analogWrite(ENB, 0);
-
-
-    //estado: detenido por obstaculo?
+    
     unsigned long currentMillis = millis();
 
     if (currentMillis - previousMillis >= interval) {
-      previousMillis = currentMillis;  // save the last time you blinked the LED
+      previousMillis = currentMillis; 
       Enviar_ubicacionEstado(2,4);
+
+      permiso_conteo_obstaculos = true;
     }
 
-    //obs_A = obs_A + 1;
+    
   }
 }
 
@@ -203,14 +212,19 @@ void viaje_hacia_atras(){
   int obs_trasero = Detectar_obstaculo_trasero();
   
   if (obs_trasero == 0){
+    
     unsigned long currentMillis = millis();
 
     if (currentMillis - previousMillis >= interval) {
-      previousMillis = currentMillis;  // save the last time you blinked the LED
+      previousMillis = currentMillis;
       Enviar_ubicacionEstado(2,3);
     }
-    
-  
+
+    if (permiso_conteo_obstaculos == true){
+      obs_R = obs_R + 1;
+      permiso_conteo_obstaculos = false;
+    }
+      
     estadoIzq_trasero = analogRead(sensorIzq_trasero);
     estadoDer_trasero = analogRead(sensorDer_trasero);
   
@@ -227,8 +241,7 @@ void viaje_hacia_atras(){
   
     }else if(estadoIzq_trasero > 500 && estadoDer_trasero > 500){
       //se detecta color negro o no se detecta nada
-      //*** PARAR ***/
-      
+      //*** PARAR ***/      
       digitalWrite(IN1, LOW);//
       digitalWrite(IN2, LOW);//
       digitalWrite(IN3, LOW);//
@@ -243,7 +256,9 @@ void viaje_hacia_atras(){
       punto_llegada_sin_peso = false;
 
       //regreso al buzon: obstaculos?////
+      GetPeso();//para crear un delay
       Enviar_infoRegresoBuzon(obs_R);
+      obs_R = 0;
       
     }else if(estadoIzq_trasero > 500 && estadoDer_trasero < 500){
       //se detecta color negro o no se detecta nada en sensor izquierdo trasero
@@ -279,17 +294,14 @@ void viaje_hacia_atras(){
     analogWrite(ENA, 0);
     analogWrite(ENB, 0);
 
-    //estado: detenido por obstaculo
-    
     unsigned long currentMillis = millis();
 
     if (currentMillis - previousMillis >= interval) {
-      previousMillis = currentMillis;  // save the last time you blinked the LED
+      previousMillis = currentMillis;
       Enviar_ubicacionEstado(2,4);
-    }
 
-    //obs_R = obs_R + 1;
-    
+      permiso_conteo_obstaculos = true;
+    }    
   }
 }
 
@@ -308,8 +320,7 @@ int Detectar_obstaculo(){
   distance = (duration / 58.2);
 
   if(distance > 0 && distance <= 20){
-    //si la distancia al obstaculo es menor de 20cm devuelve verdadero (1)
-    //Enviar_ubicacionEstado(2,4);
+    //si la distancia al obstaculo es menor de 20cm devuelve verdadero (1)    
     return 1;
   }else if (distance > 20){
     //si la distancia al obstaculo es mayor de 20.cm (o si no hay obstaculo), devuelve falso (0)
@@ -349,15 +360,16 @@ float GetPeso(){
 
 void GetPeso_puntoPartida(){
   float peso = balanza.get_units(20);
-  Serial.print("peso punto partida");
-  Serial.println(peso);
+  //Serial.print("peso punto partida");//*-
+  //Serial.println(peso);//*-
   
   if(peso >= 20){
-    Enviar_infoSalidaBuzon(peso);
     punto_partida_sin_peso = false;
     punto_partida_con_peso = true;
     punto_llegada_con_peso = false;
     punto_llegada_sin_peso = false;
+    
+    Enviar_infoSalidaBuzon(peso);
   }else{
     Enviar_ubicacionEstado(1,1);
   }
@@ -390,23 +402,22 @@ void calibracion_balanza(){
 
 void Enviar_ubicacionEstado(int u, int e){
   mySerial.print("U:(" + String(u) + "," + String(e) + ")");
-  Serial.print("enviar ubicacioEstado");
-  Serial.println("U:(" + String(u) + "," + String(e) + ")");
+  //Serial.print("enviar ubicacioEstado");//*-
+  //Serial.println("U:(" + String(u) + "," + String(e) + ")");//*-
 }
 
 void Enviar_infoSalidaBuzon(float p){
   mySerial.print("S:(" + String(p) + ")");
-  Serial.print("enviar info salida buzon");
-  Serial.println("S:(" + String(p) + ")");
+  //Serial.print("enviar info salida buzon");//*-
+  //Serial.println("S:(" + String(p) + ")");//*-
 }
 
 void Enviar_infoPaqueteEntregado(float p, int o){
   mySerial.print("P:(" + String(p) + "," + String(o) + ")");
-  
+  delay(100);
 }
 
 void Enviar_infoRegresoBuzon(int o){
-  mySerial.print("R:(" + String(o) + ")");  
-  Serial.print("enviar info regreso buzon");
-  Serial.println("R:(" + String(o) + ")");
+  mySerial.print("R:(" + String(o) + ")");    
+  delay(100);
 }
