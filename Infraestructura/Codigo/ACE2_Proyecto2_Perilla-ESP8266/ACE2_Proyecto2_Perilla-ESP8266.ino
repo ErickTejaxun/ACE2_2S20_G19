@@ -6,6 +6,8 @@ const int sensor_prox = 2;
 boolean mano_no_presente;
 boolean debe_rociar;
 
+int valor_sensor;
+
 void setup() {
   // put your setup code here, to run once:
   pinMode(RELE, OUTPUT); // Configurar relay como salida o OUTPUT
@@ -18,15 +20,24 @@ void setup() {
 
 void loop() {
   // put your main code here, to run repeatedly:
-  mano_no_presente = digitalRead(sensor_prox);
-  if(mano_no_presente == false){
+  //mano_no_presente = digitalRead(sensor_prox);
+  valor_sensor = analogRead(sensor_prox);
+  Serial.println(valor_sensor);
+  //if(mano_no_presente == false){
+  if(valor_sensor < 500){
+    Serial.println("se detecta mano");
     debe_rociar = true;
   }
 
   if (debe_rociar == true){
-    mano_no_presente = digitalRead(sensor_prox);
-    if (mano_no_presente == true){
+    //mano_no_presente = digitalRead(sensor_prox);
+    valor_sensor = analogRead(sensor_prox);
+    Serial.println(valor_sensor);
+    //if (mano_no_presente == true){
+    if(valor_sensor > 500){
+      Serial.println("ya no está la mano");
       ActivaBomba();
+      EnviarValorServer(1);
     }
   }
 }
@@ -34,11 +45,10 @@ void loop() {
 void ActivaBomba(){
   delay(3000);
   digitalWrite(RELE, HIGH); // envia señal alta al relay
-  delay(1800);
-  
+  delay(1200);
   digitalWrite(RELE, LOW);  // envia señal baja al relay
   debe_rociar = false;
-  //Serial.println("PERILLA ROCIADA");
+  Serial.println("PERILLA ROCIADA");
 }
 
 
@@ -63,10 +73,10 @@ void EnviarValorServer(int foo){
         
     HTTPClient http;    //Declare object of class HTTPClient
     
-    http.begin(*client, "https://v4cr3oicvj.execute-api.us-east-2.amazonaws.com/fase1/peso");
+    http.begin(*client, "https://v4cr3oicvj.execute-api.us-east-2.amazonaws.com/ace2-proy-2/puerta");
     http.addHeader("Content-Type", "application/json");  //Specify content-type header
     
-    int httpCode = http.POST("{\"peso\":\"" + String(foo) + "\"}");   //Send the request
+    int httpCode = http.POST("{\"puerta\":\"" + String(foo) + "\"}");   //Send the request
     String payload = http.getString();   //Get the response payload
     
     Serial.println(httpCode);   //Print HTTP return code

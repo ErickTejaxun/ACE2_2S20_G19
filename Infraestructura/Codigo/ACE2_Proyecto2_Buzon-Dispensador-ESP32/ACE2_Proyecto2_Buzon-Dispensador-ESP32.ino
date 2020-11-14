@@ -38,7 +38,7 @@ void loop() {
     if(peso > 10){
       if (ObjetoRociado == false){
         ActivaBomba_buzon();
-        EnviarValorServer(peso, "buzon");
+        EnviarValorServer("buzon", 1);
       }
     }else{
       ObjetoRociado = false;
@@ -54,7 +54,7 @@ void loop() {
     //mano presente
     if (mano_rociada == false){
       ActivaBomba_dispensador();
-      //EnviarValorServer(1, "dispensador");
+      //EnviarValorServer("dispensador", 1);
     }
   }else{
     //mano no presente
@@ -122,10 +122,10 @@ void ActivaBomba_buzon(){
 }
 
 
-void EnviarValorServer(float valor, String tipo){
+void EnviarValorServer(String tipo, float valor){
   if(WiFi.status()== WL_CONNECTED){   //Check WiFi connection status
 
-    String url_buzon = "https://v4cr3oicvj.execute-api.us-east-2.amazonaws.com/fase1/peso";
+    String url_buzon = "https://v4cr3oicvj.execute-api.us-east-2.amazonaws.com/ace2-proy-2/paquete";
     String url_dispensador = "https://v4cr3oicvj.execute-api.us-east-2.amazonaws.com/fase1/peso";
     HTTPClient http;    //Declare object of class HTTPClient
     int httpCode;
@@ -134,7 +134,7 @@ void EnviarValorServer(float valor, String tipo){
       http.begin(url_buzon);
       http.addHeader("Content-Type", "application/json");  //Specify content-type header
     
-       httpCode = http.POST("{\"peso\":\"" + String(valor) + "\"}");   //Send the request
+       httpCode = http.POST("{\"paquete\":\"" + String(valor) + "\"}");   //Send the request
       
     }else if(tipo == "dispensador"){
       http.begin(url_dispensador);
